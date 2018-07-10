@@ -1,0 +1,42 @@
+hostname {{ hostname }}
+
+username admin password 0 T_Mobile123 role network-admin
+username OO_Automation password 5 $1$DThhKc0L$jR1/T64J59FKXpoMNVhxl1  role network-admin
+
+ip domain-name {{ domain }}
+
+crypto key generate rsa label {{ hostname }}.{{ domain }} modulus 1024
+
+feature lldp
+lldp holdtime 120
+lldp reinit 2
+lldp timer 30
+lldp portid-subtype 0
+lldp tlv-select port-description
+lldp tlv-select system-name
+lldp tlv-select system-description
+lldp tlv-select system-capabilities
+lldp tlv-select management-address v4
+lldp tlv-select dcbxp
+lldp tlv-select port-vlan
+lldp tlv-select management-address v6
+
+copp copy profile strict suffix custom
+
+policy-map type control-plane copp-policy-strict-custom
+ class copp-class-management-custom
+  set cos 2
+  police cir 0 bps bc 0 bytes conform transmit violate drop
+
+control-plane
+  service-policy input copp-policy-strict-custom
+
+
+
+vrf context {{ item.vrf }}
+  ip route 0.0.0.0/0 {{ item.gateway }}
+
+
+interface {{ item.interface }}
+  vrf member {{ item.vrf }}
+  ip address {{ item.addr }}/{{ item.mask }}

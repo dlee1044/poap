@@ -1,0 +1,45 @@
+#
+# Generic POAP Playbook
+# Peter Shuleski
+# peter.shuleski@t-mobile.com
+#
+# ansible-playbook [--limit <device/list>] -u <ssh username> -k -i ./hosts poap_gen.yml
+#
+#
+    - assert:
+        that:
+          -  SerialNo is defined
+        msg: "Device Serial Number is not defined"
+
+    - assert:
+        that:
+          -  hostname is defined
+        msg: "Device hostname isn't defined"
+
+    - assert:
+        that:
+          - "{{ item.addr | ipaddr }}"
+        msg: "Mgmt IP isnt valid"
+        with_items:
+          - "{{ mgmt }}"
+
+#    - assert:
+#        that:
+#          - "{{ mgmt[0].gateway | ipaddr }}"
+#        msg: "Mgmt Gateway isnt valid"
+    - name: Generate POAP config file
+      template: src=poap.j2 dest=/tmp/conf_{{ SerialNo }}.cfg
+      with_items:
+        - "{{ mgmt }}"
+      register: poap_created
+
+    - name: Print file names
+      debug: var= "{{item.dest}}"
+      with_items:
+        - "{{ poap_created.results }}"
+
+#    - name: Copy NXOS Files
+#      copy: src={{item.name}} dest=/srv/tftp/{{item.name}} mode=0666
+#      register: nxos_copied
+#      with_items: nxosfiles
+#      notify: generate md5 nxos
